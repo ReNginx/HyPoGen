@@ -1,0 +1,60 @@
+defaults:
+  - _self_
+  - approximator@_global_: mlp_policy
+  - reward@_global_: overwrite_all
+  - dynamics@_global_: default
+  - override hydra/launcher: joblib
+
+# dataset dir
+rollout_dir: ./rollout_data
+domain_task: cheetah_run
+# train settings
+num_train_epochs: 2000
+batch_size: 512
+test_fraction: 0.8
+# save
+save_every_frames: 100
+# snapshot
+save_snapshot: true
+# misc
+seed: 2
+device: cuda
+# experiment
+experiment: 'rew_dyn_exp'
+# approximator
+input_to_model: 'rew_dyn'     # options: 'rew', 'dyn', 'rew_dyn'
+noise_clip: 0.02
+value_weight: 0.01
+td_weight: 0.01
+hidden_dim: 256
+embed_dim: 256
+k_shot: 10
+adaptation_steps: 5
+
+num_layers: 8
+use_norm: True
+weight_dim: 128
+enc_dec_dim: 256
+opt_block_dim: 128
+opt_mid_dim: 64
+num_opt_mlp_layer: 2
+num_enc_dec_layer: 2
+AVAILABLE_GPUS: [ 0,1,2,3 ]
+dl_din_way: direct
+dl_dw_way: direct
+
+hydra:
+  job:
+    chdir: True
+  run:
+    dir: ./results_approximator/${experiment}/${approximator_name}/${input_to_model}/${domain_task}/seed_${seed}/
+  sweep:
+    dir: ./results_approximator/${experiment}/${approximator_name}/${input_to_model}/${domain_task}/seed_${seed}/
+    subdir: ${hydra.job.num}
+  sweeper:
+    params:
+      approximator@_global_: hyperzero, hypogen
+      seed: 123,233,666,999,789
+      domain_task: cheetah_run,walker_walk,finger_spin  
+  launcher:
+    n_jobs: 24

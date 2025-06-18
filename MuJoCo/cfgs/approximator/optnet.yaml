@@ -1,0 +1,28 @@
+approximator_name: optnet
+
+approximator:
+  _target_: approximators.rl_solution.RLApproximator
+  model: hyper
+  input_dim: ??? # to be specified later
+  state_dim: ??? # to be specified later
+  action_dim: ??? # to be specified later
+  device: ${device}
+  lr: 0.0005
+  hidden_dim: ${hidden_dim}
+  embed_dim: ${embed_dim}
+  use_td: true
+  use_clipped_noise: false
+  noise_clip: ${noise_clip}
+  value_weight: ${value_weight}
+  td_weight: ${td_weight}
+  num_layers: ${num_layers}
+  use_norm: ${use_norm}
+  weight_dim: ${weight_dim}
+  enc_dec_dim: ${enc_dec_dim}
+  opt_block_dim: ${opt_block_dim}
+  opt_mid_dim: ${opt_mid_dim}
+  num_opt_mlp_layer: ${num_opt_mlp_layer}
+  num_enc_dec_layer: ${num_enc_dec_layer}
+  dl_din_way: slice
+  dl_dw_way: direct
+  hyper_type: optnet
