@@ -137,7 +137,8 @@ class Workspace:
                                               self.dataset.action_dim,
                                               self.cfg.approximator)
 
-        rg_1 = np.random.RandomState(self.cfg.seed)
+        rg_train = np.random.RandomState(self.cfg.seed)
+        rg_test = np.random.RandomState(3)
 
         self.reward_parameters = OmegaConf.to_container(self.cfg.reward_parameters)
 
@@ -146,10 +147,13 @@ class Workspace:
             self.dynamics_parameters = OmegaConf.to_container(self.cfg.dynamics_parameters)
         except omegaconf.errors.ConfigAttributeError:
             self.dynamics_parameters = {'use_default': True}
-
         self.rl_agent_fn = lambda reward_params, dynamics_params: dmc.make(self.cfg.domain_task, 1,
                                           1, reward_params,
-                                 dynamics_params, rg_1, False)
+                                 dynamics_params, rg_train, False)
+        self.rl_agent_fn_test = lambda reward_params, dynamics_params: dmc.make(self.cfg.domain_task, 1,
+                                          1, reward_params,
+                                 dynamics_params, rg_test, False)
+        
         self.timer = utils.Timer()
         self._global_epoch = 0
         self._global_episode = 0
@@ -232,14 +236,12 @@ class Workspace:
             metrics.update(self.approximator.update(self.train_loader))
 
             if save_this_epoch:
-                train_eval_dict, mean_reward_train = self.approximator.eval_env(self.rl_agent_fn, 3, self.train_speeds,
+                train_eval_dict, mean_reward_train = self.approximator.eval_env(self.rl_agent_fn_train, 3, self.train_speeds,
                                                                                 self.reward_parameters, self.dynamics_parameters,
                                                                                 self.input_to_model, 'train')
-                test_eval_dict, mean_reward_test = self.approximator.eval_env(self.rl_agent_fn, 10, self.test_speeds,
+                test_eval_dict, mean_reward_test = self.approximator.eval_env(self.rl_agent_fn_test, 10, self.test_speeds,
                                                                               self.reward_parameters, self.dynamics_parameters,
                                                                               self.input_to_model, 'test')
-                # metrics.update(train_eval_dict)
-                # metrics.update(test_eval_dict)
                 metrics.update({'train/mean_reward': mean_reward_train})
                 metrics.update({'test/mean_reward': mean_reward_test})
                 try:
@@ -253,6 +255,7 @@ class Workspace:
                 if mean_reward_test > best_reward_loss:
                     best_reward_loss = mean_reward_test
                     self.approximator.save(self.model_dir, 'best_reward')
+                    metrics.update({'test/best_reward': mean_reward_test})
 
             # metrics.update(self.approximator.eval(self.test_loader))
 

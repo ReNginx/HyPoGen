@@ -53,7 +53,7 @@ hydra:
     subdir: ${hydra.job.num}
   sweeper:
     params:
-      approximator@_global_: hyperzero, optnet
+      approximator@_global_: hyperzero, hypogen
       seed: 123,233,666,999,789
       domain_task: cheetah_run,walker_walk,finger_spin  
   launcher:

@@ -1,4 +1,4 @@
-approximator_name: optnet
+approximator_name: hypogen
 
 approximator:
   _target_: approximators.rl_solution.RLApproximator
@@ -25,4 +25,4 @@ approximator:
   num_enc_dec_layer: ${num_enc_dec_layer}
   dl_din_way: slice
   dl_dw_way: direct
-  hyper_type: optnet
+  hyper_type: hypogen

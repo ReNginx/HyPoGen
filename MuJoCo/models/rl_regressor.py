@@ -3,7 +3,12 @@ import torch
 import torch.nn as nn
 
 import utils.utils as utils
-from models.hypenet_core import HyperNetwork, DoubleHeadedHyperNetwork, Meta_Embadding, DoubleHeadedHyperNetworkOptNet
+from MuJoCo.models.hypernet import (
+    HyperNetwork,
+    DoubleHeadedHyperNetwork,
+    Meta_Embedding,
+    DoubleHeadedHyPoGen,
+)
 
 
 class HyperPolicy(nn.Module):
@@ -47,8 +52,8 @@ class HyperRLSolution(nn.Module):
                 base_output_activation=[torch.tanh, None],
                 **kwargs,
             )
-        elif hyper_type == 'optnet':
-            self.hyper_rl_net = DoubleHeadedHyperNetworkOptNet(
+        elif hyper_type == 'hypogen':
+            self.hyper_rl_net = DoubleHeadedHyPoGen(
                 meta_v_dim=input_param_dim,
                 z_dim=embed_dim,
                 base_v_input_dim=[state_dim, state_dim + action_dim],
@@ -77,11 +82,11 @@ class HyperRLSolution(nn.Module):
         state_action = torch.cat([state, action], dim=-1)
         q_value = self.hyper_rl_net.forward_net_2(z, state_action)
         return q_value
-    
+
     # def set_active_layers(self, n):
     #     self.hyper_rl_net.hyper_mlp1.hypernet.activate_layers = n
     #     self.hyper_rl_net.hyper_mlp2.hypernet.activate_layers = n
-    
+
     # def activate_all_layers(self):
     #     self.hyper_rl_net.hyper_mlp1.hypernet.activate_layers = None
     #     self.hyper_rl_net.hyper_mlp2.hypernet.activate_layers = None
@@ -94,7 +99,7 @@ class MLPActionPredictor(nn.Module):
     def __init__(self, input_param_dim, state_dim, action_dim, embed_dim, hidden_dim):
         super().__init__()
 
-        self.embedding = Meta_Embadding(input_param_dim, embed_dim)
+        self.embedding = Meta_Embedding(input_param_dim, embed_dim)
 
         self.policy_net = nn.Sequential(
             nn.Linear(embed_dim + state_dim, hidden_dim),
@@ -117,7 +122,7 @@ class MLPRLSolution(nn.Module):
     def __init__(self, input_param_dim, state_dim, action_dim, embed_dim, hidden_dim):
         super().__init__()
 
-        self.embedding = Meta_Embadding(input_param_dim, embed_dim)
+        self.embedding = Meta_Embedding(input_param_dim, embed_dim)
 
         self.q_net = nn.Sequential(
             nn.Linear(embed_dim + state_dim + action_dim, hidden_dim),
