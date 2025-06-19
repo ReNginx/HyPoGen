@@ -66,7 +66,7 @@ def _get_reward_dynamic_param(data_dir, domain_task, seed, test_fraction, train_
     paths_to_load = sorted(datadir.glob(f'**/{domain_task}*_seed_*.npy'))
 
     # get reward-dynamic parameters in a super hacked up way
-    reward_dynamic_params = sorted(list(set([re.findall('\-(.*?)\__', str(p))[0] for p in paths_to_load])))
+    reward_dynamic_params = sorted(list(set([re.findall('linear-(.*?)__', str(p))[0] for p in paths_to_load])))
 
     # Random picking based on the seed
     rng = default_rng(seed)

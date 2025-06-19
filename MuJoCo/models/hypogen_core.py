@@ -237,7 +237,7 @@ class OptSubBlock(nn.Module):
 
         return dl_din, dl_dw
 
-
+# @torch.compile(mode="reduce-overhead")
 class OptBlock(nn.Module):
     """
     A OptBlock takes the input and output shape of each sub-block of the target network.

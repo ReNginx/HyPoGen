@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - approximator@_global_: mlp_policy
+  - approximator@_global_: hypogen
   - reward@_global_: overwrite_all
   - dynamics@_global_: default
   - override hydra/launcher: joblib
@@ -13,7 +13,7 @@ num_train_epochs: 2000
 batch_size: 512
 test_fraction: 0.8
 # save
-save_every_frames: 100
+save_every_frames: 20
 # snapshot
 save_snapshot: true
 # misc
@@ -50,7 +50,7 @@ hydra:
     dir: ./results_approximator/${experiment}/${approximator_name}/${input_to_model}/${domain_task}/seed_${seed}/
   sweep:
     dir: ./results_approximator/${experiment}/${approximator_name}/${input_to_model}/${domain_task}/seed_${seed}/
-    subdir: ${hydra.job.num}
+    subdir: ""
   sweeper:
     params:
       approximator@_global_: hyperzero, hypogen

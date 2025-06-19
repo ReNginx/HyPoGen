@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 import utils.utils as utils
-from MuJoCo.models.hypernet import (
+from models.hypernetworks import (
     HyperNetwork,
     DoubleHeadedHyperNetwork,
     Meta_Embedding,

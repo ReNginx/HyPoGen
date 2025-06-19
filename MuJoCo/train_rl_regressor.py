@@ -60,9 +60,10 @@ def parse_split_txt(path, input_to_model):
     elif input_to_model == 'dyn':
         splits = [float(re.findall('(-?\d+\.\d+)', s)[0]) for s in splits]
     elif input_to_model == 'rew_dyn':
-        spd = [float(re.findall('linear-(-?\d+\.\d+)', s)[0]) for s in splits]
-        dyn = [float(re.findall('dyn_(-?\d+\.\d+)', s)[0]) for s in splits]
-        splits = [s for s in zip(spd, dyn)]
+        splits = [s.split('_dyn_') for s in splits]
+        spd = [float(s[0]) for s in splits]
+        dyn = [float(s[1]) for s in splits]
+        splits = [s for s in zip(spd, dyn)] 
     splits.sort()
     return splits
 
@@ -147,7 +148,7 @@ class Workspace:
             self.dynamics_parameters = OmegaConf.to_container(self.cfg.dynamics_parameters)
         except omegaconf.errors.ConfigAttributeError:
             self.dynamics_parameters = {'use_default': True}
-        self.rl_agent_fn = lambda reward_params, dynamics_params: dmc.make(self.cfg.domain_task, 1,
+        self.rl_agent_fn_train = lambda reward_params, dynamics_params: dmc.make(self.cfg.domain_task, 1,
                                           1, reward_params,
                                  dynamics_params, rg_train, False)
         self.rl_agent_fn_test = lambda reward_params, dynamics_params: dmc.make(self.cfg.domain_task, 1,
