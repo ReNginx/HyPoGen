@@ -1,5 +1,7 @@
-MuJoCo/rollout_data/
-MuJoCo/results_approximator/
+rollout_data
+rollout_data/
+results_approximator/
+ckpt/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
