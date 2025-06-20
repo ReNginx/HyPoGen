@@ -26,3 +26,5 @@ approximator:
   dl_din_way: slice
   dl_dw_way: direct
   hyper_type: hypogen
+  mid_act: ${mid_act}
+  target_layers_num: ${target_layers_num}

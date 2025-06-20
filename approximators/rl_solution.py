@@ -30,6 +30,7 @@ class RLApproximator:
         self.noise_clip = noise_clip
         self.td_weight = td_weight
         self.value_weight = value_weight
+        kwargs['use_td'] = use_td
 
         # model
         if model == 'mlp':
@@ -169,7 +170,10 @@ class RLApproximator:
             task_emb, predicted_action, predicted_value = self.rl_net(input_param, state, action)
 
             loss_action = F.mse_loss(predicted_action, action)
-            loss_value = F.mse_loss(predicted_value, value)
+            if self.value_weight > 0:
+                loss_value = F.mse_loss(predicted_value, value)
+            else:
+                loss_value = 0
             loss = loss_action + self.value_weight * loss_value
 
             if self.use_td_error:
@@ -190,7 +194,8 @@ class RLApproximator:
             self.rl_net_optimizer.step()
 
             metrics['train/loss_action_pred'] += loss_action.item()
-            metrics['train/loss_value_pred'] += self.value_weight * loss_value.item()
+            if self.value_weight > 0:
+                metrics['train/loss_value_pred'] += self.value_weight * loss_value.item()
             metrics['train/loss_total'] += loss.item()
 
         for k in metrics.keys():

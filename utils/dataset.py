@@ -4,7 +4,8 @@ import numpy as np
 from pathlib import Path
 from collections import defaultdict
 from numpy.random import default_rng
-
+from natsort import natsorted
+from glob import glob
 import torch
 from torch.utils.data import TensorDataset
 
@@ -240,3 +241,87 @@ class RLSolutionMetaDataset(RLSolutionDataset):
     @property
     def n_tasks(self):
         return self.train_data_np['state'].shape[0]
+
+class RoboArmDataset:
+    def __init__(self, data_dir, domain_task, input_to_model, seed, device, test_fraction, train_fraction=None):
+        assert input_to_model in ['cube', 'stiff', 'damp', 'length']
+        assert domain_task in ['LiftCube', 'PickCube']
+
+        if input_to_model == 'cube':
+            cube_str = 'cube*'
+        else:
+            cube_str = 'cube0.020'
+        if input_to_model == 'stiff':
+            stiff_str = 'stiff*'
+        else:
+            stiff_str = 'stiff1000'
+        if input_to_model == 'damp':
+            damp_str = 'damp*'
+        else:
+            damp_str = 'damp100' 
+        if input_to_model == 'length':
+            length_str = 'length*'
+        else:
+            length_str = 'length1.0'
+
+        self.data_dir = data_dir
+        self.seed = seed
+        self.device = device
+        self.test_fraction = test_fraction
+        self.files = glob(os.path.join(self.data_dir, f'{domain_task}*_{cube_str}_{stiff_str}_{damp_str}_{length_str}.npy'))
+        self.files = natsorted(self.files)
+
+        splits = np.array_split(self.files, int(len(self.files) * (1 - test_fraction)+1))
+        self.train_files = [x[-1] for x in splits[:-1]]
+        self.test_files = list(set(self.files) - set(self.train_files)) 
+        self.test_files = natsorted(self.test_files)
+        print('train files', self.train_files)
+        print('test files', self.test_files)
+
+        train_np = [np.load(f, allow_pickle=True).item() for f in self.train_files]
+        for d, f in zip(train_np, self.train_files):
+            for k in d.keys():
+                d[k] = np.concatenate(d[k])
+            d['input_param'] = np.ones((len(d['state']), 1)) * self.get_input_param(f, input_to_model)
+        test_np = [np.load(f, allow_pickle=True).item() for f in self.test_files]
+        for d, f in zip(test_np, self.test_files):
+            for k in d.keys():
+                d[k] = np.concatenate(d[k])
+            d['input_param'] = np.ones((len(d['state']), 1)) * self.get_input_param(f, input_to_model)
+
+        self.keys = ['input_param', 'state', 'action', 'next_state', 'reward', 'discount', 'value']
+
+        for k in ['reward', 'discount', 'value']:
+            for d in train_np:
+                d[k] = d[k].reshape(-1, 1)
+            for d in test_np:
+                d[k] = d[k].reshape(-1, 1)
+
+        train_tensors = [torch.tensor(np.concatenate([d[k] for d in train_np]), dtype=torch.float, device=device)
+                           for k in self.keys]
+        test_tensors = [torch.tensor(np.concatenate([d[k] for d in test_np]), dtype=torch.float, device=device)
+                            for k in self.keys]
+                            
+        self.n_tasks = train_tensors[1].shape[0]
+
+        self._state_dim = train_tensors[1].shape[-1]
+        self.train_dataset = TensorDataset(*train_tensors)        
+        self.test_dataset = TensorDataset(*test_tensors)
+
+    def get_input_param(self, file_path, input_to_model):
+        file_path = os.path.basename(file_path)
+        file_path = os.path.splitext(file_path)[0]
+        input_param = [p for p in file_path.split('_') if input_to_model in p][0]
+        return float(input_param.replace(input_to_model, ''))
+
+    @property
+    def dynamic_param_dim(self):
+        return 1
+
+    @property
+    def state_dim(self):
+        return self._state_dim
+
+    @property
+    def action_dim(self):
+        return 7

@@ -110,12 +110,13 @@ def save_git_sha(dir):
         f.write(sha)
 
 def save_code(dir, workdir):
-    workdir = os.path.join(workdir, 'code')
-    os.makedirs(workdir, exist_ok=True)
-    os.system(f'rsync -am --exclude logs/ --exclude .idea/ --exclude results*/ \
-        --exclude logs/ --exclude rollout*/ --exclude eval_plots/ \
-        --include "*.py" --include "*.json" \
-        --include "*.yaml" --include "*/" --exclude "*" {dir} {workdir}')
+    pass 
+    # workdir = os.path.join(workdir, 'code')
+    # os.makedirs(workdir, exist_ok=True)
+    # os.system(f'rsync -am --exclude logs/ --exclude .idea/ --exclude results*/ \
+    #     --exclude logs/ --exclude rollout*/ --exclude eval_plots/ \
+    #     --include "*.py" --include "*.json" \
+    #     --include "*.yaml" --include "*/" --exclude "*" {dir} {workdir}')
 
 
 def get_last_model(model_dir):

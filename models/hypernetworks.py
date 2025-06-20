@@ -230,18 +230,26 @@ class DoubleHeadedHyperNetwork(nn.Module):
 
 
 class PolicyTargetNet(TargetNet):
-    def __init__(self, dim1, dim2, dim3, final_act):
+    def __init__(
+        self, input_dim, hidden_dim, output_dim, final_act, mid_act=F.relu, target_layers_num=2
+    ):
         super().__init__()
-        self.dim1 = dim1
-        self.dim2 = dim2
-        self.dim3 = dim3
-        self.fc1 = nn.Linear(dim1, dim2)
-        self.fc2 = nn.Linear(dim2, dim3)
+        self.dim1 = input_dim
+        self.dim2 = hidden_dim
+        self.dim3 = output_dim
+        self.linears = nn.ModuleList()
+        in_dim = input_dim
+        for _ in range(target_layers_num - 1):
+            self.linears.append(nn.Linear(in_dim, hidden_dim))
+            in_dim = hidden_dim
+        self.linears.append(nn.Linear(in_dim, output_dim))
+        self.mid_act = eval(mid_act) if isinstance(mid_act, str) else mid_act
         self.final_act = final_act
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = self.final_act(self.fc2(x))
+        for liner in self.linears:
+            x = self.mid_act(liner(x))
+        x = self.final_act(x)
         return x
 
     def get_in_dims(self):
@@ -251,7 +259,7 @@ class PolicyTargetNet(TargetNet):
         return [64, self.dim3]
 
     def get_submodules(self):
-        return [self.fc1, self.fc2]
+        return self.linears
 
 
 class HyPoGenWrapper(HyPoGen):
@@ -274,8 +282,16 @@ class HyPoGenWrapper(HyPoGen):
         **kwargs,
     ):
 
+        mid_act = kwargs.get("mid_act", F.relu)
+        target_layers_num = kwargs.get("target_layers_num", 2)
+
         target_net = PolicyTargetNet(
-            dim2, dim3, dim4, nn.Tanh() if tanh else nn.Identity()
+            dim2,
+            dim3,
+            dim4,
+            nn.Tanh() if tanh else nn.Identity(),
+            mid_act=mid_act,
+            target_layers_num=target_layers_num,
         )
         super().__init__(
             target_net,
@@ -394,22 +410,25 @@ class DoubleHeadedHyPoGen(nn.Module):
             tanh=True,
             **kwargs,
         )
-        self.hyper_mlp2 = HyPoGenWrapper(
-            z_dim,
-            base_v_input_dim[1],
-            dynamic_layer_dim,
-            base_v_output_dim[1],
-            num_layers,
-            use_norm,
-            weight_dim,
-            enc_dec_dim,
-            opt_block_dim,
-            opt_mid_dim,
-            num_opt_mlp_layer,
-            num_enc_dec_layer,
-            tanh=False,
-            **kwargs,
-        )
+
+        self.use_td = kwargs.get("use_td", True)
+        if self.use_td:
+            self.hyper_mlp2 = HyPoGenWrapper(
+                z_dim,
+                base_v_input_dim[1],
+                dynamic_layer_dim,
+                base_v_output_dim[1],
+                num_layers,
+                use_norm,
+                weight_dim,
+                enc_dec_dim,
+                opt_block_dim,
+                opt_mid_dim,
+                num_opt_mlp_layer,
+                num_enc_dec_layer,
+                tanh=False,
+                **kwargs,
+            )
 
         # print out stat of self
         total_params = sum(p.numel() for p in self.parameters())
@@ -421,7 +440,10 @@ class DoubleHeadedHyPoGen(nn.Module):
     def forward(self, meta_v, base_v_1, base_v_2, train=False):
         z = self.hyper(meta_v)
         out_1 = self.hyper_mlp1(z, base_v_1, train=train)
-        out_2 = self.hyper_mlp2(z, base_v_2, train=train)
+        if self.use_td:
+            out_2 = self.hyper_mlp2(z, base_v_2, train=train)
+        else:
+            out_2 = None
         return z, out_1, out_2
 
     def embed(self, meta_v):
