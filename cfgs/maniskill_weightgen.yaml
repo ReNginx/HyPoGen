@@ -1,0 +1,66 @@
+defaults:
+  - approximator@_global_: hypogen
+  - override hydra/launcher: joblib
+  - _self_
+
+# dataset dir
+rollout_dir: ./rollout_data
+domain_task: LiftCube
+# train settings
+num_train_epochs: 501
+batch_size: 512
+test_fraction: 0.7
+# save
+save_every_frames: 250
+# snapshot
+save_snapshot: true
+# misc
+seed: 2
+device: cuda
+# experiment
+experiment: 'maniskill_weightgen'
+# approximator
+input_to_model: 'cube'     # options: 'cube', 'damp', 'stiff', 'length'
+noise_clip: 0.00
+value_weight: 0.00
+td_weight: 0.00
+hidden_dim: 256
+embed_dim: 256
+k_shot: 10
+adaptation_steps: 50
+
+num_layers: 8
+use_norm: True
+weight_dim: 128
+enc_dec_dim: 256
+opt_block_dim: 128
+opt_mid_dim: 64
+num_opt_mlp_layer: 2
+num_enc_dec_layer: 2
+AVAILABLE_GPUS: [ 0, 1, 2, 3, 4, 5, 6, 7 ]
+dl_din_way: direct
+dl_dw_way: direct
+approximator:
+  use_td: false
+
+# input_params: [0.005, 0.010, 0.015, 0.020, 0.025, 0.030, 0.035]
+input_params: [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4]
+ckpt_path: 'maniskill_exp'
+base_ckpt_path: 'ckpt/latest_model_LiftCube-our.zip'
+load_step: 2000
+
+hydra:
+  job:
+    chdir: False
+  run:
+    dir: ./results_approximator/${experiment}/${approximator_name}/${input_to_model}/${domain_task}/seed_${seed}/
+  sweep:
+    dir: ./results_approximator/${experiment}/${approximator_name}/${input_to_model}/${domain_task}/seed_${seed}/
+    subdir: ''
+  sweeper:
+    params:
+      approximator@_global_: hypogen
+      domain_task: LiftCube, PickCube
+      input_to_model: cube, damp, stiff, length
+  launcher:
+    n_jobs: 8
