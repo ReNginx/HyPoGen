@@ -96,7 +96,7 @@ bash eval_maniskill.sh
 
 ## 📜 License
 
-This project is licensed under the MIT License. See `LICENSE` file for details.
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
